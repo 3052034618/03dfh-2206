@@ -112,8 +112,6 @@ export class AlertEngineService {
       orderBy: { collectedAt: 'desc' }
     });
 
-    allProbes.unshift(...newProbes);
-
     const latestByLocation = new Map<string, ProbeSnapshot[]>();
     for (const probe of allProbes) {
       const list = latestByLocation.get(probe.probeLocation) || [];
@@ -124,6 +122,13 @@ export class AlertEngineService {
         collectedAt: probe.collectedAt
       });
       latestByLocation.set(probe.probeLocation, list);
+    }
+
+    for (const [location, list] of latestByLocation) {
+      list.sort((a, b) =>
+        new Date(b.collectedAt).getTime() - new Date(a.collectedAt).getTime()
+      );
+      latestByLocation.set(location, list);
     }
 
     const rules = await prisma.alertRule.findMany({
@@ -686,7 +691,7 @@ export class AlertEngineService {
         where: { id: existingAlert.id },
         data: {
           triggerTemp: result.triggerProbe!.temperature,
-          probeComparison: result.probeComparison as any,
+          probeComparison: JSON.stringify(result.probeComparison),
           durationSeconds: result.durationSeconds!,
           confirmedAt: existingAlert.confirmedAt || new Date()
         }
@@ -709,7 +714,7 @@ export class AlertEngineService {
         probeId: result.triggerProbe!.probeId,
         probeLocation: result.triggerProbe!.probeLocation,
         triggerTemp: result.triggerProbe!.temperature,
-        probeComparison: result.probeComparison as any,
+        probeComparison: JSON.stringify(result.probeComparison),
         durationSeconds: result.durationSeconds!,
         firstTriggeredAt: result.firstTriggeredAt!,
         confirmedAt: new Date(),

@@ -255,7 +255,10 @@ export class NotificationService {
   }
 
   private formatComparisonInfo(alert: AlertRecordWithRelations): string {
-    const comp: any = alert.probeComparison;
+    let comp: any = alert.probeComparison;
+    if (typeof comp === 'string') {
+      try { comp = JSON.parse(comp); } catch { comp = null; }
+    }
     if (!comp || !comp.locationSummary) return '';
 
     const locationMap: Record<string, string> = {

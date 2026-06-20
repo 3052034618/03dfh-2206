@@ -93,6 +93,7 @@ router.get(
         probeId: r.probeId,
         probeLocation: r.probeLocation,
         triggerTemp: r.triggerTemp,
+        probeComparison: r.probeComparison ? JSON.parse(r.probeComparison) : null,
         durationMinutes: Math.round(r.durationSeconds / 60),
         firstTriggeredAt: r.firstTriggeredAt,
         confirmedAt: r.confirmedAt,
@@ -168,6 +169,7 @@ router.get('/:id', [
 
     successResponse(res, {
       ...record,
+      probeComparison: record.probeComparison ? JSON.parse(record.probeComparison) : null,
       alertRule: record.alertRule ? {
         ...record.alertRule,
         notifyRoles: JSON.parse(record.alertRule.notifyRoles)

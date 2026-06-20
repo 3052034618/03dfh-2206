@@ -421,3 +421,285 @@ Argument `probeComparison`: Invalid value provided. Expected String or Null, pro
     at AlertEngineService.processShipmentProbes (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:173:9)
     at AlertEngineService.processProbeData (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:72:25)
     at D:\trae-bz\TraeProjects\2206\src\routes\alertRecord.routes.ts:426:21
+[2026-06-21 03:27:07] ERROR: 处理车次 3 探头数据失败: 
+Invalid `prisma.alertRecord.create()` invocation in
+D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:50
+
+  705   return;
+  706 }
+  707 
+→ 708 const alertRecord = await prisma.alertRecord.create({
+        data: {
+          alertRuleId: 4,
+          shipmentId: 3,
+          customerId: 1,
+          alertLevel: "CRITICAL",
+          probeId: "CORE-TEST-001",
+          probeLocation: "CARGO_CORE",
+          triggerTemp: -8.2,
+          probeComparison: {
+            triggerProbe: {
+              probeId: "CORE-TEST-001",
+              location: "CARGO_CORE",
+              temp: -8.2
+            },
+            adjacentProbes: [
+              {
+                probeId: "DOOR-TEST-001",
+                location: "DOOR",
+                temp: -12,
+                diff: -3.8
+              },
+              {
+                probeId: "RETURN-TEST-001",
+                location: "RETURN_AIR",
+                temp: -11,
+                diff: -2.8
+              }
+            ],
+            locationSummary: {
+              DOOR: {
+                count: 1,
+                avgTemp: -12,
+                minTemp: -12,
+                maxTemp: -12
+              },
+              RETURN_AIR: {
+                count: 1,
+                avgTemp: -11,
+                minTemp: -11,
+                maxTemp: -11
+              },
+              CARGO_CORE: {
+                count: 11,
+                avgTemp: -9.2,
+                minTemp: -10.2,
+                maxTemp: -8.2
+              }
+            }
+          },
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          durationSeconds: 541,
+          firstTriggeredAt: new Date("2026-06-20T19:18:06.000Z"),
+          confirmedAt: new Date("2026-06-20T19:27:07.309Z"),
+          status: "CONFIRMED"
+        }
+      })
+
+Argument `probeComparison`: Invalid value provided. Expected String or Null, provided Object. | {"name":"PrismaClientValidationError","clientVersion":"5.22.0"}
+PrismaClientValidationError: 
+Invalid `prisma.alertRecord.create()` invocation in
+D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:50
+
+  705   return;
+  706 }
+  707 
+→ 708 const alertRecord = await prisma.alertRecord.create({
+        data: {
+          alertRuleId: 4,
+          shipmentId: 3,
+          customerId: 1,
+          alertLevel: "CRITICAL",
+          probeId: "CORE-TEST-001",
+          probeLocation: "CARGO_CORE",
+          triggerTemp: -8.2,
+          probeComparison: {
+            triggerProbe: {
+              probeId: "CORE-TEST-001",
+              location: "CARGO_CORE",
+              temp: -8.2
+            },
+            adjacentProbes: [
+              {
+                probeId: "DOOR-TEST-001",
+                location: "DOOR",
+                temp: -12,
+                diff: -3.8
+              },
+              {
+                probeId: "RETURN-TEST-001",
+                location: "RETURN_AIR",
+                temp: -11,
+                diff: -2.8
+              }
+            ],
+            locationSummary: {
+              DOOR: {
+                count: 1,
+                avgTemp: -12,
+                minTemp: -12,
+                maxTemp: -12
+              },
+              RETURN_AIR: {
+                count: 1,
+                avgTemp: -11,
+                minTemp: -11,
+                maxTemp: -11
+              },
+              CARGO_CORE: {
+                count: 11,
+                avgTemp: -9.2,
+                minTemp: -10.2,
+                maxTemp: -8.2
+              }
+            }
+          },
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          durationSeconds: 541,
+          firstTriggeredAt: new Date("2026-06-20T19:18:06.000Z"),
+          confirmedAt: new Date("2026-06-20T19:27:07.309Z"),
+          status: "CONFIRMED"
+        }
+      })
+
+Argument `probeComparison`: Invalid value provided. Expected String or Null, provided Object.
+    at wn (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:29:1363)
+    at $n.handleRequestError (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6958)
+    at $n.handleAndLogRequestError (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at l (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at AlertEngineService.handleAlertTrigger (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:25)
+    at AlertEngineService.processShipmentProbes (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:178:9)
+    at AlertEngineService.processProbeData (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:72:25)
+    at D:\trae-bz\TraeProjects\2206\src\routes\probe.routes.ts:56:23
+[2026-06-21 03:27:40] ERROR: 处理车次 3 探头数据失败: 
+Invalid `prisma.alertRecord.create()` invocation in
+D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:50
+
+  705   return;
+  706 }
+  707 
+→ 708 const alertRecord = await prisma.alertRecord.create({
+        data: {
+          alertRuleId: 4,
+          shipmentId: 3,
+          customerId: 1,
+          alertLevel: "CRITICAL",
+          probeId: "CORE-TEST-001",
+          probeLocation: "CARGO_CORE",
+          triggerTemp: -8.2,
+          probeComparison: {
+            triggerProbe: {
+              probeId: "CORE-TEST-001",
+              location: "CARGO_CORE",
+              temp: -8.2
+            },
+            adjacentProbes: [
+              {
+                probeId: "DOOR-TEST-001",
+                location: "DOOR",
+                temp: -12,
+                diff: -3.8
+              },
+              {
+                probeId: "RETURN-TEST-001",
+                location: "RETURN_AIR",
+                temp: -11,
+                diff: -2.8
+              }
+            ],
+            locationSummary: {
+              DOOR: {
+                count: 1,
+                avgTemp: -12,
+                minTemp: -12,
+                maxTemp: -12
+              },
+              RETURN_AIR: {
+                count: 1,
+                avgTemp: -11,
+                minTemp: -11,
+                maxTemp: -11
+              },
+              CARGO_CORE: {
+                count: 11,
+                avgTemp: -9.2,
+                minTemp: -10.2,
+                maxTemp: -8.2
+              }
+            }
+          },
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          durationSeconds: 574,
+          firstTriggeredAt: new Date("2026-06-20T19:18:06.000Z"),
+          confirmedAt: new Date("2026-06-20T19:27:40.654Z"),
+          status: "CONFIRMED"
+        }
+      })
+
+Argument `probeComparison`: Invalid value provided. Expected String or Null, provided Object. | {"name":"PrismaClientValidationError","clientVersion":"5.22.0"}
+PrismaClientValidationError: 
+Invalid `prisma.alertRecord.create()` invocation in
+D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:50
+
+  705   return;
+  706 }
+  707 
+→ 708 const alertRecord = await prisma.alertRecord.create({
+        data: {
+          alertRuleId: 4,
+          shipmentId: 3,
+          customerId: 1,
+          alertLevel: "CRITICAL",
+          probeId: "CORE-TEST-001",
+          probeLocation: "CARGO_CORE",
+          triggerTemp: -8.2,
+          probeComparison: {
+            triggerProbe: {
+              probeId: "CORE-TEST-001",
+              location: "CARGO_CORE",
+              temp: -8.2
+            },
+            adjacentProbes: [
+              {
+                probeId: "DOOR-TEST-001",
+                location: "DOOR",
+                temp: -12,
+                diff: -3.8
+              },
+              {
+                probeId: "RETURN-TEST-001",
+                location: "RETURN_AIR",
+                temp: -11,
+                diff: -2.8
+              }
+            ],
+            locationSummary: {
+              DOOR: {
+                count: 1,
+                avgTemp: -12,
+                minTemp: -12,
+                maxTemp: -12
+              },
+              RETURN_AIR: {
+                count: 1,
+                avgTemp: -11,
+                minTemp: -11,
+                maxTemp: -11
+              },
+              CARGO_CORE: {
+                count: 11,
+                avgTemp: -9.2,
+                minTemp: -10.2,
+                maxTemp: -8.2
+              }
+            }
+          },
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          durationSeconds: 574,
+          firstTriggeredAt: new Date("2026-06-20T19:18:06.000Z"),
+          confirmedAt: new Date("2026-06-20T19:27:40.654Z"),
+          status: "CONFIRMED"
+        }
+      })
+
+Argument `probeComparison`: Invalid value provided. Expected String or Null, provided Object.
+    at wn (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:29:1363)
+    at $n.handleRequestError (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6958)
+    at $n.handleAndLogRequestError (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at l (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at AlertEngineService.handleAlertTrigger (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:25)
+    at AlertEngineService.processShipmentProbes (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:178:9)
+    at AlertEngineService.processProbeData (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:72:25)
+    at D:\trae-bz\TraeProjects\2206\src\routes\alertRecord.routes.ts:426:21

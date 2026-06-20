@@ -439,3 +439,434 @@ Argument `probeComparison`: Invalid value provided. Expected String or Null, pro
 [2026-06-21 03:19:25] INFO: ::1 - - [20/Jun/2026:19:19:25 +0000] "GET /api/v1/alert-records/stats/summary HTTP/1.1" 200 161 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
 [2026-06-21 03:19:45] INFO: ::1 - - [20/Jun/2026:19:19:45 +0000] "GET /api/v1/probes/shipment/SP202606210001/summary HTTP/1.1" 200 2389 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
 [2026-06-21 03:19:45] INFO: ::1 - - [20/Jun/2026:19:19:45 +0000] "GET /api/v1/health/stats HTTP/1.1" 200 234 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:26:00] INFO: 数据库连接成功
+[2026-06-21 03:26:00] INFO: 告警重试服务已启动，间隔 60s
+[2026-06-21 03:26:00] INFO: 告警重试服务已启动
+[2026-06-21 03:26:00] INFO: 冷链告警服务启动成功
+[2026-06-21 03:26:00] INFO: 服务地址: http://localhost:3000
+[2026-06-21 03:26:00] INFO: API文档根路径: http://localhost:3000/
+[2026-06-21 03:26:00] INFO: 环境: development
+[2026-06-21 03:26:29] INFO: ::1 - - [20/Jun/2026:19:26:29 +0000] "GET /api/v1/shipments HTTP/1.1" 200 1374 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:26:46] INFO: 创建车次: SP-TEST-001
+[2026-06-21 03:26:46] INFO: ::1 - - [20/Jun/2026:19:26:46 +0000] "POST /api/v1/shipments HTTP/1.1" 201 424 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:27:07] INFO: 接收探头数据: 车次=SP-TEST-001, 数量=13
+[2026-06-21 03:27:07] ERROR: 处理车次 3 探头数据失败: 
+Invalid `prisma.alertRecord.create()` invocation in
+D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:50
+
+  705   return;
+  706 }
+  707 
+→ 708 const alertRecord = await prisma.alertRecord.create({
+        data: {
+          alertRuleId: 4,
+          shipmentId: 3,
+          customerId: 1,
+          alertLevel: "CRITICAL",
+          probeId: "CORE-TEST-001",
+          probeLocation: "CARGO_CORE",
+          triggerTemp: -8.2,
+          probeComparison: {
+            triggerProbe: {
+              probeId: "CORE-TEST-001",
+              location: "CARGO_CORE",
+              temp: -8.2
+            },
+            adjacentProbes: [
+              {
+                probeId: "DOOR-TEST-001",
+                location: "DOOR",
+                temp: -12,
+                diff: -3.8
+              },
+              {
+                probeId: "RETURN-TEST-001",
+                location: "RETURN_AIR",
+                temp: -11,
+                diff: -2.8
+              }
+            ],
+            locationSummary: {
+              DOOR: {
+                count: 1,
+                avgTemp: -12,
+                minTemp: -12,
+                maxTemp: -12
+              },
+              RETURN_AIR: {
+                count: 1,
+                avgTemp: -11,
+                minTemp: -11,
+                maxTemp: -11
+              },
+              CARGO_CORE: {
+                count: 11,
+                avgTemp: -9.2,
+                minTemp: -10.2,
+                maxTemp: -8.2
+              }
+            }
+          },
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          durationSeconds: 541,
+          firstTriggeredAt: new Date("2026-06-20T19:18:06.000Z"),
+          confirmedAt: new Date("2026-06-20T19:27:07.309Z"),
+          status: "CONFIRMED"
+        }
+      })
+
+Argument `probeComparison`: Invalid value provided. Expected String or Null, provided Object. | {"name":"PrismaClientValidationError","clientVersion":"5.22.0"}
+PrismaClientValidationError: 
+Invalid `prisma.alertRecord.create()` invocation in
+D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:50
+
+  705   return;
+  706 }
+  707 
+→ 708 const alertRecord = await prisma.alertRecord.create({
+        data: {
+          alertRuleId: 4,
+          shipmentId: 3,
+          customerId: 1,
+          alertLevel: "CRITICAL",
+          probeId: "CORE-TEST-001",
+          probeLocation: "CARGO_CORE",
+          triggerTemp: -8.2,
+          probeComparison: {
+            triggerProbe: {
+              probeId: "CORE-TEST-001",
+              location: "CARGO_CORE",
+              temp: -8.2
+            },
+            adjacentProbes: [
+              {
+                probeId: "DOOR-TEST-001",
+                location: "DOOR",
+                temp: -12,
+                diff: -3.8
+              },
+              {
+                probeId: "RETURN-TEST-001",
+                location: "RETURN_AIR",
+                temp: -11,
+                diff: -2.8
+              }
+            ],
+            locationSummary: {
+              DOOR: {
+                count: 1,
+                avgTemp: -12,
+                minTemp: -12,
+                maxTemp: -12
+              },
+              RETURN_AIR: {
+                count: 1,
+                avgTemp: -11,
+                minTemp: -11,
+                maxTemp: -11
+              },
+              CARGO_CORE: {
+                count: 11,
+                avgTemp: -9.2,
+                minTemp: -10.2,
+                maxTemp: -8.2
+              }
+            }
+          },
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          durationSeconds: 541,
+          firstTriggeredAt: new Date("2026-06-20T19:18:06.000Z"),
+          confirmedAt: new Date("2026-06-20T19:27:07.309Z"),
+          status: "CONFIRMED"
+        }
+      })
+
+Argument `probeComparison`: Invalid value provided. Expected String or Null, provided Object.
+    at wn (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:29:1363)
+    at $n.handleRequestError (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6958)
+    at $n.handleAndLogRequestError (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at l (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at AlertEngineService.handleAlertTrigger (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:25)
+    at AlertEngineService.processShipmentProbes (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:178:9)
+    at AlertEngineService.processProbeData (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:72:25)
+    at D:\trae-bz\TraeProjects\2206\src\routes\probe.routes.ts:56:23
+[2026-06-21 03:27:07] INFO: ::1 - - [20/Jun/2026:19:27:07 +0000] "POST /api/v1/probes/ingest HTTP/1.1" 200 187 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:27:22] INFO: ::1 - - [20/Jun/2026:19:27:22 +0000] "GET /api/v1/alert-rules/1 HTTP/1.1" 200 702 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:27:22] INFO: ::1 - - [20/Jun/2026:19:27:22 +0000] "GET /api/v1/probes?shipmentNo=SP-TEST-001&pageSize=15 HTTP/1.1" 200 4454 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:27:40] ERROR: 处理车次 3 探头数据失败: 
+Invalid `prisma.alertRecord.create()` invocation in
+D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:50
+
+  705   return;
+  706 }
+  707 
+→ 708 const alertRecord = await prisma.alertRecord.create({
+        data: {
+          alertRuleId: 4,
+          shipmentId: 3,
+          customerId: 1,
+          alertLevel: "CRITICAL",
+          probeId: "CORE-TEST-001",
+          probeLocation: "CARGO_CORE",
+          triggerTemp: -8.2,
+          probeComparison: {
+            triggerProbe: {
+              probeId: "CORE-TEST-001",
+              location: "CARGO_CORE",
+              temp: -8.2
+            },
+            adjacentProbes: [
+              {
+                probeId: "DOOR-TEST-001",
+                location: "DOOR",
+                temp: -12,
+                diff: -3.8
+              },
+              {
+                probeId: "RETURN-TEST-001",
+                location: "RETURN_AIR",
+                temp: -11,
+                diff: -2.8
+              }
+            ],
+            locationSummary: {
+              DOOR: {
+                count: 1,
+                avgTemp: -12,
+                minTemp: -12,
+                maxTemp: -12
+              },
+              RETURN_AIR: {
+                count: 1,
+                avgTemp: -11,
+                minTemp: -11,
+                maxTemp: -11
+              },
+              CARGO_CORE: {
+                count: 11,
+                avgTemp: -9.2,
+                minTemp: -10.2,
+                maxTemp: -8.2
+              }
+            }
+          },
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          durationSeconds: 574,
+          firstTriggeredAt: new Date("2026-06-20T19:18:06.000Z"),
+          confirmedAt: new Date("2026-06-20T19:27:40.654Z"),
+          status: "CONFIRMED"
+        }
+      })
+
+Argument `probeComparison`: Invalid value provided. Expected String or Null, provided Object. | {"name":"PrismaClientValidationError","clientVersion":"5.22.0"}
+PrismaClientValidationError: 
+Invalid `prisma.alertRecord.create()` invocation in
+D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:50
+
+  705   return;
+  706 }
+  707 
+→ 708 const alertRecord = await prisma.alertRecord.create({
+        data: {
+          alertRuleId: 4,
+          shipmentId: 3,
+          customerId: 1,
+          alertLevel: "CRITICAL",
+          probeId: "CORE-TEST-001",
+          probeLocation: "CARGO_CORE",
+          triggerTemp: -8.2,
+          probeComparison: {
+            triggerProbe: {
+              probeId: "CORE-TEST-001",
+              location: "CARGO_CORE",
+              temp: -8.2
+            },
+            adjacentProbes: [
+              {
+                probeId: "DOOR-TEST-001",
+                location: "DOOR",
+                temp: -12,
+                diff: -3.8
+              },
+              {
+                probeId: "RETURN-TEST-001",
+                location: "RETURN_AIR",
+                temp: -11,
+                diff: -2.8
+              }
+            ],
+            locationSummary: {
+              DOOR: {
+                count: 1,
+                avgTemp: -12,
+                minTemp: -12,
+                maxTemp: -12
+              },
+              RETURN_AIR: {
+                count: 1,
+                avgTemp: -11,
+                minTemp: -11,
+                maxTemp: -11
+              },
+              CARGO_CORE: {
+                count: 11,
+                avgTemp: -9.2,
+                minTemp: -10.2,
+                maxTemp: -8.2
+              }
+            }
+          },
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          durationSeconds: 574,
+          firstTriggeredAt: new Date("2026-06-20T19:18:06.000Z"),
+          confirmedAt: new Date("2026-06-20T19:27:40.654Z"),
+          status: "CONFIRMED"
+        }
+      })
+
+Argument `probeComparison`: Invalid value provided. Expected String or Null, provided Object.
+    at wn (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:29:1363)
+    at $n.handleRequestError (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6958)
+    at $n.handleAndLogRequestError (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at l (D:\trae-bz\TraeProjects\2206\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at AlertEngineService.handleAlertTrigger (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:708:25)
+    at AlertEngineService.processShipmentProbes (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:178:9)
+    at AlertEngineService.processProbeData (D:\trae-bz\TraeProjects\2206\src\services\alertEngine.service.ts:72:25)
+    at D:\trae-bz\TraeProjects\2206\src\routes\alertRecord.routes.ts:426:21
+[2026-06-21 03:27:40] INFO: ::1 - - [20/Jun/2026:19:27:40 +0000] "POST /api/v1/alert-records/shipment/3/re-evaluate HTTP/1.1" 200 155 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:28:11] INFO: 数据库连接成功
+[2026-06-21 03:28:11] INFO: 告警重试服务已启动，间隔 60s
+[2026-06-21 03:28:11] INFO: 告警重试服务已启动
+[2026-06-21 03:28:11] INFO: 冷链告警服务启动成功
+[2026-06-21 03:28:11] INFO: 服务地址: http://localhost:3000
+[2026-06-21 03:28:11] INFO: API文档根路径: http://localhost:3000/
+[2026-06-21 03:28:11] INFO: 环境: development
+[2026-06-21 03:28:18] INFO: 数据库连接成功
+[2026-06-21 03:28:18] INFO: 告警重试服务已启动，间隔 60s
+[2026-06-21 03:28:18] INFO: 告警重试服务已启动
+[2026-06-21 03:28:18] INFO: 冷链告警服务启动成功
+[2026-06-21 03:28:18] INFO: 服务地址: http://localhost:3000
+[2026-06-21 03:28:18] INFO: API文档根路径: http://localhost:3000/
+[2026-06-21 03:28:18] INFO: 环境: development
+[2026-06-21 03:28:42] INFO: 数据库连接成功
+[2026-06-21 03:28:42] INFO: 告警重试服务已启动，间隔 60s
+[2026-06-21 03:28:42] INFO: 告警重试服务已启动
+[2026-06-21 03:28:42] INFO: 冷链告警服务启动成功
+[2026-06-21 03:28:42] INFO: 服务地址: http://localhost:3000
+[2026-06-21 03:28:42] INFO: API文档根路径: http://localhost:3000/
+[2026-06-21 03:28:42] INFO: 环境: development
+[2026-06-21 03:28:48] INFO: 数据库连接成功
+[2026-06-21 03:28:48] INFO: 告警重试服务已启动，间隔 60s
+[2026-06-21 03:28:48] INFO: 告警重试服务已启动
+[2026-06-21 03:28:48] INFO: 冷链告警服务启动成功
+[2026-06-21 03:28:48] INFO: 服务地址: http://localhost:3000
+[2026-06-21 03:28:48] INFO: API文档根路径: http://localhost:3000/
+[2026-06-21 03:28:48] INFO: 环境: development
+[2026-06-21 03:29:12] INFO: 数据库连接成功
+[2026-06-21 03:29:12] INFO: 告警重试服务已启动，间隔 60s
+[2026-06-21 03:29:12] INFO: 告警重试服务已启动
+[2026-06-21 03:29:12] INFO: 冷链告警服务启动成功
+[2026-06-21 03:29:12] INFO: 服务地址: http://localhost:3000
+[2026-06-21 03:29:12] INFO: API文档根路径: http://localhost:3000/
+[2026-06-21 03:29:12] INFO: 环境: development
+[2026-06-21 03:29:46] INFO: 数据库连接成功
+[2026-06-21 03:29:46] INFO: 告警重试服务已启动，间隔 60s
+[2026-06-21 03:29:46] INFO: 告警重试服务已启动
+[2026-06-21 03:29:46] INFO: 冷链告警服务启动成功
+[2026-06-21 03:29:46] INFO: 服务地址: http://localhost:3000
+[2026-06-21 03:29:46] INFO: API文档根路径: http://localhost:3000/
+[2026-06-21 03:29:46] INFO: 环境: development
+[2026-06-21 03:29:55] INFO: 创建车次: SP-VERIFY-001
+[2026-06-21 03:29:55] INFO: ::1 - - [20/Jun/2026:19:29:55 +0000] "POST /api/v1/shipments HTTP/1.1" 201 422 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:30:17] INFO: 接收探头数据: 车次=SP-VERIFY-001, 数量=14
+[2026-06-21 03:30:17] INFO: 创建告警记录 #1: 冷冻品-严重超温 - -8.2°C, 持续 9 分钟
+[2026-06-21 03:30:17] INFO: [企业微信-未配置Webhook] @13900139001: 🚨【运营台-严重】告警ID:1
+规则[4]: 冷冻品-严重超温
+车次: SP-VERIFY-001 | 车牌: 京A·88888
+司机: 王师傅 | 客户:顺丰冷链物流
+探头: 货心探头#CORE-
+[2026-06-21 03:30:17] INFO: [冷链平台-未配置回调] 通知ID:2
+[2026-06-21 03:30:17] INFO: [司机App-未配置Push] -> 王师傅: 🚨【严重】冷链温度异常 请立即处理
+车牌: 京A·88888
+异常探头: 货心探头#CORE-V-A (-8.2°C)
+持续时间: 9分钟
+多点对比: [回风:-12.0°C | 门边:-3.0°C
+[2026-06-21 03:30:17] INFO: [企业微信-未配置Webhook] @13600136001: 🚨【调度中心-严重】温度告警
+━━━━━━━━━━━━━━━━
+告警类型: 冷冻品-严重超温
+车次号: SP-VERIFY-001
+车牌号: 京A·88888
+司机: 王师傅
+触发探头: 货心探头#
+[2026-06-21 03:30:17] INFO: [冷链平台-未配置回调] 通知ID:5
+[2026-06-21 03:30:17] INFO: [企业微信-未配置Webhook] @13500135001: 🚨【客户质控-严重】冷链温度异常通知
+━━━━━━━━━━━━━━━━
+客户: 顺丰冷链物流
+告警规则: 冷冻品-严重超温
+车次: SP-VERIFY-001
+车辆: 京A·88888
+超温位置: 
+[2026-06-21 03:30:17] INFO: [冷链平台-未配置回调] 通知ID:7
+[2026-06-21 03:30:17] INFO: [模拟SMS] -> 13500135001: 🚨【客户质控-严重】冷链温度异常通知
+━━━━━━━━━━━━━━━━
+客户: 顺丰冷链物流
+告警规则: 冷冻品-严重超温
+车次: SP-VERIFY-001
+车辆: 京A·88888
+超温位置: ...
+[2026-06-21 03:30:17] INFO: 告警 #1 通知派发完成, 涉及用户: 4
+[2026-06-21 03:30:18] INFO: 创建告警记录 #2: 冷冻品-货心温度过高 - -8.2°C, 持续 11 分钟
+[2026-06-21 03:30:18] INFO: [司机App-未配置Push] -> 王师傅: ⚠️【警告】冷链温度异常 请立即处理
+车牌: 京A·88888
+异常探头: 货心探头#CORE-V-A (-8.2°C)
+持续时间: 11分钟
+多点对比: [回风:-12.0°C | 门边:-3.0°
+[2026-06-21 03:30:18] INFO: [企业微信-未配置Webhook] @13600136001: ⚠️【调度中心-警告】温度告警
+━━━━━━━━━━━━━━━━
+告警类型: 冷冻品-货心温度过高
+车次号: SP-VERIFY-001
+车牌号: 京A·88888
+司机: 王师傅
+触发探头: 货心探
+[2026-06-21 03:30:18] INFO: [冷链平台-未配置回调] 通知ID:11
+[2026-06-21 03:30:18] INFO: [企业微信-未配置Webhook] @13500135001: ⚠️【客户质控-警告】冷链温度异常通知
+━━━━━━━━━━━━━━━━
+客户: 顺丰冷链物流
+告警规则: 冷冻品-货心温度过高
+车次: SP-VERIFY-001
+车辆: 京A·88888
+超温位置
+[2026-06-21 03:30:18] INFO: [冷链平台-未配置回调] 通知ID:13
+[2026-06-21 03:30:18] INFO: [模拟SMS] -> 13500135001: ⚠️【客户质控-警告】冷链温度异常通知
+━━━━━━━━━━━━━━━━
+客户: 顺丰冷链物流
+告警规则: 冷冻品-货心温度过高
+车次: SP-VERIFY-001
+车辆: 京A·88888
+超温位置...
+[2026-06-21 03:30:18] INFO: 告警 #2 通知派发完成, 涉及用户: 3
+[2026-06-21 03:30:18] INFO: ::1 - - [20/Jun/2026:19:30:18 +0000] "POST /api/v1/probes/ingest HTTP/1.1" 200 453 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:30:41] INFO: ::1 - - [20/Jun/2026:19:30:41 +0000] "GET /api/v1/alert-records?shipmentNo=SP-VERIFY-001 HTTP/1.1" 200 2678 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:31:15] INFO: 更新告警记录 #1: 持续 10 分钟, 当前 -7.2°C
+[2026-06-21 03:31:15] INFO: 更新告警记录 #2: 持续 12 分钟, 当前 -7.2°C
+[2026-06-21 03:31:15] INFO: 批量接收探头数据: 6条, 触发2个告警
+[2026-06-21 03:31:15] INFO: ::1 - - [20/Jun/2026:19:31:15 +0000] "POST /api/v1/probes/batch HTTP/1.1" 200 144 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:31:15] INFO: ::1 - - [20/Jun/2026:19:31:15 +0000] "GET /api/v1/alert-records?shipmentNo=SP-VERIFY-001 HTTP/1.1" 200 2703 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:31:44] INFO: 创建车次: SP-DOOR-TEST-001
+[2026-06-21 03:31:44] INFO: ::1 - - [20/Jun/2026:19:31:44 +0000] "POST /api/v1/shipments HTTP/1.1" 201 423 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:31:45] INFO: 接收探头数据: 车次=SP-DOOR-TEST-001, 数量=15
+[2026-06-21 03:31:45] INFO: 创建告警记录 #3: 冷冻品-门边突升但货心稳定 - -4.8°C, 持续 7 分钟
+[2026-06-21 03:31:45] INFO: [企业微信-未配置Webhook] @13600136001: ℹ️【调度中心-关注】温度告警
+━━━━━━━━━━━━━━━━
+告警类型: 冷冻品-门边突升但货心稳定
+车次号: SP-DOOR-TEST-001
+车牌号: 京A·88888
+司机: 王师傅
+触发探
+[2026-06-21 03:31:45] INFO: [冷链平台-未配置回调] 通知ID:16
+[2026-06-21 03:31:45] INFO: 告警 #3 通知派发完成, 涉及用户: 1
+[2026-06-21 03:31:45] INFO: ::1 - - [20/Jun/2026:19:31:45 +0000] "POST /api/v1/probes/ingest HTTP/1.1" 200 335 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:32:07] INFO: ::1 - - [20/Jun/2026:19:32:07 +0000] "GET /api/v1/alert-records?shipmentNo=SP-DOOR-TEST-001 HTTP/1.1" 200 1497 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
+[2026-06-21 03:32:07] INFO: ::1 - - [20/Jun/2026:19:32:07 +0000] "GET /api/v1/alert-records/3 HTTP/1.1" 200 5702 "-" "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6216"
