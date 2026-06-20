@@ -23,10 +23,19 @@ export interface RuleMatchContext {
   triggeredAt: Date;
 }
 
+export interface TriggeredProbeInfo {
+  probeId: string;
+  probeLocation: string;
+  temperature: number;
+  durationSeconds: number;
+  firstTriggeredAt: Date;
+}
+
 export interface AlertResult {
   triggered: boolean;
   alertLevel?: string;
   triggerProbe?: ProbeSnapshot;
+  triggeredProbes?: TriggeredProbeInfo[];
   durationSeconds?: number;
   firstTriggeredAt?: Date;
   probeComparison?: Record<string, any>;
@@ -39,18 +48,26 @@ export interface ProbeComparison {
     location: string;
     temp: number;
   };
+  triggeredProbes?: TriggeredProbeInfo[];
+  triggeredProbeCount?: number;
   adjacentProbes: Array<{
     probeId: string;
     location: string;
     temp: number;
     diff: number;
   }>;
+  probesByLocation: Record<string, Array<{
+    probeId: string;
+    temp: number;
+    stable: boolean;
+  }>>;
   locationSummary: Record<string, {
     count: number;
     avgTemp: number;
     minTemp: number;
     maxTemp: number;
   }>;
+  note?: string;
 }
 
 export class AlertEngineService {
@@ -81,7 +98,7 @@ export class AlertEngineService {
 
   private async processShipmentProbes(
     shipmentId: number,
-    newProbes: ProbeData[]
+    _newProbes: ProbeData[]
   ): Promise<AlertResult[]> {
     const shipment = await prisma.shipment.findUnique({
       where: { id: shipmentId },
@@ -170,7 +187,7 @@ export class AlertEngineService {
     for (const rule of applicableRules) {
       if (triggeredRuleIds.has(rule.id)) continue;
 
-      const result = await this.evaluateRule(rule, context);
+      const result = this.evaluateRule(rule, context);
       if (result.triggered && result.matchedRule) {
         triggeredRuleIds.add(result.matchedRule.id);
         results.push(result);
@@ -184,7 +201,7 @@ export class AlertEngineService {
     return results;
   }
 
-  private async evaluateRule(rule: AlertRule, ctx: RuleMatchContext): Promise<AlertResult> {
+  private evaluateRule(rule: AlertRule, ctx: RuleMatchContext): AlertResult {
     const probes = ctx.latestByLocation.get(rule.probeLocation) || [];
     if (probes.length === 0) {
       return { triggered: false };
@@ -212,22 +229,22 @@ export class AlertEngineService {
     }
   }
 
-  private evaluateTemperatureAbove(
+  private collectTriggeredProbes(
+    probeGroups: Map<string, ProbeSnapshot[]>,
     rule: AlertRule,
-    probes: ProbeSnapshot[],
+    condition: (temp: number) => boolean,
     ctx: RuleMatchContext
-  ): AlertResult {
-    const probeGroups = this.groupByProbeId(probes);
-    let bestMatch: AlertResult = { triggered: false };
+  ): TriggeredProbeInfo[] {
+    const triggered: TriggeredProbeInfo[] = [];
 
     for (const [probeId, probeList] of probeGroups) {
-      const sorted = probeList.sort((a, b) =>
+      const sorted = [...probeList].sort((a, b) =>
         new Date(a.collectedAt).getTime() - new Date(b.collectedAt).getTime()
       );
 
       const { sustained, startAt, latest } = this.findSustainedCondition(
         sorted,
-        (temp) => temp > rule.thresholdTemp,
+        condition,
         rule.durationMinutes
       );
 
@@ -235,26 +252,52 @@ export class AlertEngineService {
         const duration = Math.floor(
           (ctx.triggeredAt.getTime() - new Date(startAt).getTime()) / 1000
         );
-
-        const comparison = this.buildProbeComparison(latest, ctx);
-
-        const result: AlertResult = {
-          triggered: true,
-          alertLevel: rule.alertLevel,
-          triggerProbe: latest,
+        triggered.push({
+          probeId,
+          probeLocation: latest.probeLocation,
+          temperature: latest.temperature,
           durationSeconds: duration,
-          firstTriggeredAt: startAt,
-          probeComparison: comparison as any,
-          matchedRule: rule
-        };
-
-        if (!bestMatch.triggered || (result.durationSeconds || 0) > (bestMatch.durationSeconds || 0)) {
-          bestMatch = result;
-        }
+          firstTriggeredAt: new Date(startAt)
+        });
       }
     }
 
-    return bestMatch;
+    return triggered;
+  }
+
+  private evaluateTemperatureAbove(
+    rule: AlertRule,
+    probes: ProbeSnapshot[],
+    ctx: RuleMatchContext
+  ): AlertResult {
+    const probeGroups = this.groupByProbeId(probes);
+    const triggeredList = this.collectTriggeredProbes(
+      probeGroups, rule, (temp) => temp > rule.thresholdTemp, ctx
+    );
+
+    if (triggeredList.length === 0) return { triggered: false };
+
+    const worst = triggeredList.reduce((a, b) => a.temperature > b.temperature ? a : b);
+    const earliestStart = triggeredList.reduce((a, b) => a.firstTriggeredAt < b.firstTriggeredAt ? a : b);
+
+    const comparison = this.buildProbeComparison(
+      { probeId: worst.probeId, probeLocation: worst.probeLocation, temperature: worst.temperature, collectedAt: ctx.triggeredAt },
+      ctx,
+      rule
+    );
+
+    return {
+      triggered: true,
+      alertLevel: rule.alertLevel,
+      triggerProbe: { probeId: worst.probeId, probeLocation: worst.probeLocation, temperature: worst.temperature, collectedAt: ctx.triggeredAt },
+      triggeredProbes: triggeredList,
+      durationSeconds: Math.floor(
+        (ctx.triggeredAt.getTime() - earliestStart.firstTriggeredAt.getTime()) / 1000
+      ),
+      firstTriggeredAt: earliestStart.firstTriggeredAt,
+      probeComparison: comparison as any,
+      matchedRule: rule
+    };
   }
 
   private evaluateTemperatureBelow(
@@ -263,43 +306,33 @@ export class AlertEngineService {
     ctx: RuleMatchContext
   ): AlertResult {
     const probeGroups = this.groupByProbeId(probes);
-    let bestMatch: AlertResult = { triggered: false };
+    const triggeredList = this.collectTriggeredProbes(
+      probeGroups, rule, (temp) => temp < rule.thresholdTemp, ctx
+    );
 
-    for (const [probeId, probeList] of probeGroups) {
-      const sorted = probeList.sort((a, b) =>
-        new Date(a.collectedAt).getTime() - new Date(b.collectedAt).getTime()
-      );
+    if (triggeredList.length === 0) return { triggered: false };
 
-      const { sustained, startAt, latest } = this.findSustainedCondition(
-        sorted,
-        (temp) => temp < rule.thresholdTemp,
-        rule.durationMinutes
-      );
+    const worst = triggeredList.reduce((a, b) => a.temperature < b.temperature ? a : b);
+    const earliestStart = triggeredList.reduce((a, b) => a.firstTriggeredAt < b.firstTriggeredAt ? a : b);
 
-      if (sustained && startAt && latest) {
-        const duration = Math.floor(
-          (ctx.triggeredAt.getTime() - new Date(startAt).getTime()) / 1000
-        );
+    const comparison = this.buildProbeComparison(
+      { probeId: worst.probeId, probeLocation: worst.probeLocation, temperature: worst.temperature, collectedAt: ctx.triggeredAt },
+      ctx,
+      rule
+    );
 
-        const comparison = this.buildProbeComparison(latest, ctx);
-
-        const result: AlertResult = {
-          triggered: true,
-          alertLevel: rule.alertLevel,
-          triggerProbe: latest,
-          durationSeconds: duration,
-          firstTriggeredAt: startAt,
-          probeComparison: comparison as any,
-          matchedRule: rule
-        };
-
-        if (!bestMatch.triggered || duration > (bestMatch.durationSeconds || 0)) {
-          bestMatch = result;
-        }
-      }
-    }
-
-    return bestMatch;
+    return {
+      triggered: true,
+      alertLevel: rule.alertLevel,
+      triggerProbe: { probeId: worst.probeId, probeLocation: worst.probeLocation, temperature: worst.temperature, collectedAt: ctx.triggeredAt },
+      triggeredProbes: triggeredList,
+      durationSeconds: Math.floor(
+        (ctx.triggeredAt.getTime() - earliestStart.firstTriggeredAt.getTime()) / 1000
+      ),
+      firstTriggeredAt: earliestStart.firstTriggeredAt,
+      probeComparison: comparison as any,
+      matchedRule: rule
+    };
   }
 
   private evaluateSpikeWithCompare(
@@ -316,52 +349,71 @@ export class AlertEngineService {
       return { triggered: false };
     }
 
-    const compareLatest = compareProbes[0];
-    const compareTempOk = compareLatest.temperature <= rule.compareThreshold;
+    const compareGroups = this.groupByProbeId(compareProbes);
+    const compareLatestByProbe: Array<{ probeId: string; temp: number }> = [];
+    let allCompareOk = true;
+    const unstableProbes: string[] = [];
 
-    if (!compareTempOk) {
-      return { triggered: false };
-    }
-
-    const probeGroups = this.groupByProbeId(probes);
-    let bestMatch: AlertResult = { triggered: false };
-
-    for (const [probeId, probeList] of probeGroups) {
-      const sorted = probeList.sort((a, b) =>
-        new Date(a.collectedAt).getTime() - new Date(b.collectedAt).getTime()
+    for (const [probeId, probeList] of compareGroups) {
+      const sorted = [...probeList].sort((a, b) =>
+        new Date(b.collectedAt).getTime() - new Date(a.collectedAt).getTime()
       );
+      const latest = sorted[0];
+      compareLatestByProbe.push({ probeId, temp: latest.temperature });
 
-      const { sustained, startAt, latest } = this.findSustainedCondition(
-        sorted,
-        (temp) => temp > rule.thresholdTemp,
-        rule.durationMinutes
-      );
-
-      if (sustained && startAt && latest) {
-        const duration = Math.floor(
-          (ctx.triggeredAt.getTime() - new Date(startAt).getTime()) / 1000
-        );
-
-        const comparison = this.buildProbeComparison(latest, ctx);
-        (comparison as any).note = `${rule.compareProbeLocation}探头温度(${compareLatest.temperature}°C)稳定，仅${rule.probeLocation}异常`;
-
-        const result: AlertResult = {
-          triggered: true,
-          alertLevel: rule.alertLevel,
-          triggerProbe: latest,
-          durationSeconds: duration,
-          firstTriggeredAt: startAt,
-          probeComparison: comparison as any,
-          matchedRule: rule
-        };
-
-        if (!bestMatch.triggered || duration > (bestMatch.durationSeconds || 0)) {
-          bestMatch = result;
-        }
+      if (latest.temperature > rule.compareThreshold) {
+        allCompareOk = false;
+        unstableProbes.push(probeId);
       }
     }
 
-    return bestMatch;
+    const probeGroups = this.groupByProbeId(probes);
+    const triggeredList = this.collectTriggeredProbes(
+      probeGroups, rule, (temp) => temp > rule.thresholdTemp, ctx
+    );
+
+    if (triggeredList.length === 0) return { triggered: false };
+
+    const worst = triggeredList.reduce((a, b) => a.temperature > b.temperature ? a : b);
+    const earliestStart = triggeredList.reduce((a, b) => a.firstTriggeredAt < b.firstTriggeredAt ? a : b);
+
+    const comparison = this.buildProbeComparison(
+      { probeId: worst.probeId, probeLocation: worst.probeLocation, temperature: worst.temperature, collectedAt: ctx.triggeredAt },
+      ctx,
+      rule
+    );
+
+    if (!allCompareOk) {
+      (comparison as any).note = `${rule.compareProbeLocation}探头${unstableProbes.join(',')}已不稳定(${compareLatestByProbe.filter(p => unstableProbes.includes(p.probeId)).map(p => `${p.probeId}:${p.temp}°C`).join(', ')}),不再仅按${rule.probeLocation}关注处理`;
+      return {
+        triggered: true,
+        alertLevel: 'WARNING',
+        triggerProbe: { probeId: worst.probeId, probeLocation: worst.probeLocation, temperature: worst.temperature, collectedAt: ctx.triggeredAt },
+        triggeredProbes: triggeredList,
+        durationSeconds: Math.floor(
+          (ctx.triggeredAt.getTime() - earliestStart.firstTriggeredAt.getTime()) / 1000
+        ),
+        firstTriggeredAt: earliestStart.firstTriggeredAt,
+        probeComparison: comparison as any,
+        matchedRule: rule
+      };
+    }
+
+    const stableInfo = compareLatestByProbe.map(p => `${p.probeId}:${p.temp}°C`).join(', ');
+    (comparison as any).note = `${rule.compareProbeLocation}探头全部稳定(${stableInfo}),仅${rule.probeLocation}异常`;
+
+    return {
+      triggered: true,
+      alertLevel: rule.alertLevel,
+      triggerProbe: { probeId: worst.probeId, probeLocation: worst.probeLocation, temperature: worst.temperature, collectedAt: ctx.triggeredAt },
+      triggeredProbes: triggeredList,
+      durationSeconds: Math.floor(
+        (ctx.triggeredAt.getTime() - earliestStart.firstTriggeredAt.getTime()) / 1000
+      ),
+      firstTriggeredAt: earliestStart.firstTriggeredAt,
+      probeComparison: comparison as any,
+      matchedRule: rule
+    };
   }
 
   private evaluateDiffWithCompare(
@@ -383,7 +435,7 @@ export class AlertEngineService {
     let bestMatch: AlertResult = { triggered: false };
 
     for (const [probeId, probeList] of probeGroups) {
-      const sorted = probeList.sort((a, b) =>
+      const sorted = [...probeList].sort((a, b) =>
         new Date(a.collectedAt).getTime() - new Date(b.collectedAt).getTime()
       );
 
@@ -435,12 +487,19 @@ export class AlertEngineService {
 
         if (duration >= rule.durationMinutes * 60) {
           const latest = sustainedPairs[sustainedPairs.length - 1].probe;
-          const comparison = this.buildProbeComparison(latest, ctx);
+          const comparison = this.buildProbeComparison(latest, ctx, rule);
 
           const result: AlertResult = {
             triggered: true,
             alertLevel: rule.alertLevel,
             triggerProbe: latest,
+            triggeredProbes: [{
+              probeId: latest.probeId,
+              probeLocation: latest.probeLocation,
+              temperature: latest.temperature,
+              durationSeconds: duration,
+              firstTriggeredAt: firstTime
+            }],
             durationSeconds: duration,
             firstTriggeredAt: firstTime,
             probeComparison: comparison as any,
@@ -481,12 +540,12 @@ export class AlertEngineService {
 
     if (rule.durationMinutes > 0) {
       const probeGroups = this.groupByProbeId(probes);
-      let allSustained = true;
+      const sustainedViolating: ProbeSnapshot[] = [];
       let earliestStart: Date | null = null;
 
       for (const v of violating) {
         const group = probeGroups.get(v.probeId) || [];
-        const sorted = group.sort((a, b) =>
+        const sorted = [...group].sort((a, b) =>
           new Date(a.collectedAt).getTime() - new Date(b.collectedAt).getTime()
         );
         const { sustained, startAt } = this.findSustainedCondition(
@@ -494,27 +553,26 @@ export class AlertEngineService {
           (temp) => temp > rule.thresholdTemp,
           rule.durationMinutes
         );
-        if (!sustained) {
-          allSustained = false;
-          break;
-        }
-        if (!earliestStart || startAt! < earliestStart) {
-          earliestStart = startAt!;
+        if (sustained) {
+          sustainedViolating.push(v);
+          if (!earliestStart || startAt! < earliestStart) {
+            earliestStart = startAt!;
+          }
         }
       }
 
-      if (!allSustained || !earliestStart) {
+      if (sustainedViolating.length === 0 || !earliestStart) {
         return { triggered: false };
       }
 
-      const worst = violating.reduce((a, b) => a.temperature > b.temperature ? a : b);
+      const worst = sustainedViolating.reduce((a, b) => a.temperature > b.temperature ? a : b);
       const duration = Math.floor(
         (ctx.triggeredAt.getTime() - earliestStart.getTime()) / 1000
       );
 
-      const comparison = this.buildProbeComparison(worst, ctx);
-      (comparison as any).violatingCount = violating.length;
-      (comparison as any).violatingProbes = violating.map(v => ({
+      const comparison = this.buildProbeComparison(worst, ctx, rule);
+      (comparison as any).violatingCount = sustainedViolating.length;
+      (comparison as any).violatingProbes = sustainedViolating.map(v => ({
         probeId: v.probeId,
         temp: v.temperature
       }));
@@ -523,6 +581,13 @@ export class AlertEngineService {
         triggered: true,
         alertLevel: rule.alertLevel,
         triggerProbe: worst,
+        triggeredProbes: sustainedViolating.map(v => ({
+          probeId: v.probeId,
+          probeLocation: v.probeLocation,
+          temperature: v.temperature,
+          durationSeconds: duration,
+          firstTriggeredAt: earliestStart!
+        })),
         durationSeconds: duration,
         firstTriggeredAt: earliestStart,
         probeComparison: comparison as any,
@@ -531,13 +596,20 @@ export class AlertEngineService {
     }
 
     const worst = violating.reduce((a, b) => a.temperature > b.temperature ? a : b);
-    const comparison = this.buildProbeComparison(worst, ctx);
+    const comparison = this.buildProbeComparison(worst, ctx, rule);
     (comparison as any).violatingCount = violating.length;
 
     return {
       triggered: true,
       alertLevel: rule.alertLevel,
       triggerProbe: worst,
+      triggeredProbes: violating.map(v => ({
+        probeId: v.probeId,
+        probeLocation: v.probeLocation,
+        temperature: v.temperature,
+        durationSeconds: 0,
+        firstTriggeredAt: ctx.triggeredAt
+      })),
       durationSeconds: 0,
       firstTriggeredAt: ctx.triggeredAt,
       probeComparison: comparison as any,
@@ -553,6 +625,17 @@ export class AlertEngineService {
       groups.set(s.probeId, list);
     }
     return groups;
+  }
+
+  private getLatestByProbe(snapshots: ProbeSnapshot[]): Map<string, ProbeSnapshot> {
+    const latest = new Map<string, ProbeSnapshot>();
+    for (const s of snapshots) {
+      const existing = latest.get(s.probeId);
+      if (!existing || new Date(s.collectedAt) > new Date(existing.collectedAt)) {
+        latest.set(s.probeId, s);
+      }
+    }
+    return latest;
   }
 
   private findSustainedCondition(
@@ -572,7 +655,6 @@ export class AlertEngineService {
       return { sustained: false, startAt: null, latest: null };
     }
 
-    let runStartIdx = -1;
     let maxRunStartIdx = -1;
     let maxRunEndIdx = -1;
     let currentRunStartIdx = -1;
@@ -586,8 +668,9 @@ export class AlertEngineService {
         if (currentRunStartIdx !== -1) {
           const runDuration = new Date(sortedProbes[i - 1].collectedAt).getTime() -
             new Date(sortedProbes[currentRunStartIdx].collectedAt).getTime();
-          const maxDuration = new Date(sortedProbes[maxRunEndIdx >= 0 ? maxRunEndIdx : 0].collectedAt).getTime() -
-            new Date(sortedProbes[maxRunStartIdx >= 0 ? maxRunStartIdx : 0].collectedAt).getTime();
+          const maxDuration = (maxRunEndIdx >= 0 && maxRunStartIdx >= 0) ?
+            new Date(sortedProbes[maxRunEndIdx].collectedAt).getTime() -
+            new Date(sortedProbes[maxRunStartIdx].collectedAt).getTime() : 0;
 
           if (runDuration > maxDuration) {
             maxRunStartIdx = currentRunStartIdx;
@@ -632,19 +715,39 @@ export class AlertEngineService {
 
   private buildProbeComparison(
     triggerProbe: ProbeSnapshot,
-    ctx: RuleMatchContext
+    ctx: RuleMatchContext,
+    rule?: AlertRule
   ): ProbeComparison {
     const adjacentProbes: ProbeComparison['adjacentProbes'] = [];
 
     for (const [location, snapshots] of ctx.latestByLocation) {
       if (location === triggerProbe.probeLocation) continue;
-      const latest = snapshots[0];
-      if (latest) {
+      const latestByProbe = this.getLatestByProbe(snapshots);
+      for (const [, snap] of latestByProbe) {
         adjacentProbes.push({
-          probeId: latest.probeId,
-          location: latest.probeLocation,
-          temp: latest.temperature,
-          diff: Math.round((latest.temperature - triggerProbe.temperature) * 10) / 10
+          probeId: snap.probeId,
+          location: snap.probeLocation,
+          temp: snap.temperature,
+          diff: Math.round((snap.temperature - triggerProbe.temperature) * 10) / 10
+        });
+      }
+    }
+
+    const probesByLocation: ProbeComparison['probesByLocation'] = {};
+    for (const [location, snapshots] of ctx.latestByLocation) {
+      const latestByProbe = this.getLatestByProbe(snapshots);
+      probesByLocation[location] = [];
+      for (const [, snap] of latestByProbe) {
+        let stable = true;
+        if (rule && location === rule.probeLocation) {
+          stable = !(snap.temperature > rule.thresholdTemp);
+        } else if (rule && location === rule.compareProbeLocation && rule.compareThreshold != null) {
+          stable = snap.temperature <= rule.compareThreshold;
+        }
+        probesByLocation[location].push({
+          probeId: snap.probeId,
+          temp: snap.temperature,
+          stable
         });
       }
     }
@@ -667,6 +770,7 @@ export class AlertEngineService {
         temp: triggerProbe.temperature
       },
       adjacentProbes,
+      probesByLocation,
       locationSummary
     };
   }
@@ -677,21 +781,27 @@ export class AlertEngineService {
     result: AlertResult
   ): Promise<void> {
     const shipment = ctx.shipment;
+
     const existingAlert = await prisma.alertRecord.findFirst({
       where: {
         shipmentId: shipment.id,
         alertRuleId: rule.id,
-        probeId: result.triggerProbe!.probeId,
         status: { in: [AlertStatus.PENDING, AlertStatus.CONFIRMED, AlertStatus.ACKNOWLEDGED] }
       }
     });
+
+    const comp = result.probeComparison as any;
+    if (result.triggeredProbes && result.triggeredProbes.length > 0) {
+      comp.triggeredProbes = result.triggeredProbes;
+      comp.triggeredProbeCount = result.triggeredProbes.length;
+    }
 
     if (existingAlert) {
       const updated = await prisma.alertRecord.update({
         where: { id: existingAlert.id },
         data: {
           triggerTemp: result.triggerProbe!.temperature,
-          probeComparison: JSON.stringify(result.probeComparison),
+          probeComparison: JSON.stringify(comp),
           durationSeconds: result.durationSeconds!,
           confirmedAt: existingAlert.confirmedAt || new Date()
         }
@@ -701,7 +811,7 @@ export class AlertEngineService {
         await this.notificationService.dispatchNotifications(updated, rule, ctx);
       }
 
-      logger.info(`更新告警记录 #${existingAlert.id}: 持续 ${Math.round((result.durationSeconds || 0) / 60)} 分钟, 当前 ${result.triggerProbe!.temperature}°C`);
+      logger.info(`更新告警记录 #${existingAlert.id}: 触发${result.triggeredProbes?.length || 1}个探头, 持续 ${Math.round((result.durationSeconds || 0) / 60)} 分钟, 当前 ${result.triggerProbe!.temperature}°C`);
       return;
     }
 
@@ -714,7 +824,7 @@ export class AlertEngineService {
         probeId: result.triggerProbe!.probeId,
         probeLocation: result.triggerProbe!.probeLocation,
         triggerTemp: result.triggerProbe!.temperature,
-        probeComparison: JSON.stringify(result.probeComparison),
+        probeComparison: JSON.stringify(comp),
         durationSeconds: result.durationSeconds!,
         firstTriggeredAt: result.firstTriggeredAt!,
         confirmedAt: new Date(),
@@ -722,7 +832,7 @@ export class AlertEngineService {
       }
     });
 
-    logger.info(`创建告警记录 #${alertRecord.id}: ${rule.name} - ${result.triggerProbe!.temperature}°C, 持续 ${Math.round((result.durationSeconds || 0) / 60)} 分钟`);
+    logger.info(`创建告警记录 #${alertRecord.id}: ${rule.name} - 触发${result.triggeredProbes?.length || 1}个探头, ${result.triggerProbe!.temperature}°C, 持续 ${Math.round((result.durationSeconds || 0) / 60)} 分钟`);
 
     await this.notificationService.dispatchNotifications(alertRecord, rule, ctx);
   }
@@ -743,7 +853,7 @@ export class AlertEngineService {
 
     for (const alert of activeAlerts) {
       const rule = alert.alertRule;
-      const result = await this.evaluateRule(rule, ctx);
+      const result = this.evaluateRule(rule, ctx);
 
       if (!result.triggered) {
         const probes = ctx.latestByLocation.get(alert.probeLocation) || [];

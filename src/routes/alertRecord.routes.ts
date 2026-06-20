@@ -86,29 +86,35 @@ router.get(
         })
       ]);
 
-      const formatted = data.map(r => ({
-        id: r.id,
-        alertLevel: r.alertLevel,
-        status: r.status,
-        probeId: r.probeId,
-        probeLocation: r.probeLocation,
-        triggerTemp: r.triggerTemp,
-        probeComparison: r.probeComparison ? JSON.parse(r.probeComparison) : null,
-        durationMinutes: Math.round(r.durationSeconds / 60),
-        firstTriggeredAt: r.firstTriggeredAt,
-        confirmedAt: r.confirmedAt,
-        resolvedAt: r.resolvedAt,
-        handledBy: r.handledBy,
-        handlerRole: r.handlerRole,
-        handleResult: r.handleResult,
-        handleRemark: r.handleRemark,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
-        rule: r.alertRule,
-        shipment: r.shipment,
-        customer: r.customer,
-        notificationCount: r._count.notifications
-      }));
+      const formatted = data.map(r => {
+        let comp: any = r.probeComparison ? JSON.parse(r.probeComparison) : null;
+        return {
+          id: r.id,
+          alertLevel: r.alertLevel,
+          status: r.status,
+          probeId: r.probeId,
+          probeLocation: r.probeLocation,
+          triggerTemp: r.triggerTemp,
+          triggeredProbeCount: comp?.triggeredProbeCount || 1,
+          triggeredProbes: comp?.triggeredProbes || null,
+          probesByLocation: comp?.probesByLocation || null,
+          probeComparison: comp,
+          durationMinutes: Math.round(r.durationSeconds / 60),
+          firstTriggeredAt: r.firstTriggeredAt,
+          confirmedAt: r.confirmedAt,
+          resolvedAt: r.resolvedAt,
+          handledBy: r.handledBy,
+          handlerRole: r.handlerRole,
+          handleResult: r.handleResult,
+          handleRemark: r.handleRemark,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt,
+          rule: r.alertRule,
+          shipment: r.shipment,
+          customer: r.customer,
+          notificationCount: r._count.notifications
+        };
+      });
 
       paginatedResponse(res, formatted, page, pageSize, total);
     } catch (error: any) {

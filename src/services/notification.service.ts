@@ -259,7 +259,7 @@ export class NotificationService {
     if (typeof comp === 'string') {
       try { comp = JSON.parse(comp); } catch { comp = null; }
     }
-    if (!comp || !comp.locationSummary) return '';
+    if (!comp) return '';
 
     const locationMap: Record<string, string> = {
       CARGO_CORE: '货心',
@@ -271,13 +271,30 @@ export class NotificationService {
     };
 
     const parts: string[] = [];
-    for (const [loc, summary] of Object.entries<any>(comp.locationSummary)) {
-      const locName = locationMap[loc] || loc;
-      parts.push(`${locName}:${summary.avgTemp?.toFixed(1)}°C`);
+
+    if (comp.probesByLocation) {
+      for (const [loc, probes] of Object.entries<any>(comp.probesByLocation)) {
+        const locName = locationMap[loc] || loc;
+        const probeDetails = probes.map((p: any) => {
+          const tag = p.stable ? '稳定' : '异常';
+          return `${p.probeId}:${p.temp}°C(${tag})`;
+        }).join(', ');
+        parts.push(`${locName}[${probeDetails}]`);
+      }
+    } else if (comp.locationSummary) {
+      for (const [loc, summary] of Object.entries<any>(comp.locationSummary)) {
+        const locName = locationMap[loc] || loc;
+        parts.push(`${locName}:${summary.avgTemp?.toFixed(1)}°C`);
+      }
     }
 
+    if (comp.triggeredProbeCount) {
+      parts.push(`触发${comp.triggeredProbeCount}个探头`);
+    }
+    if (comp.violatingCount) {
+      parts.push(`超温探头:${comp.violatingCount}个`);
+    }
     if (comp.note) parts.push(comp.note);
-    if (comp.violatingCount) parts.push(`超温探头数量:${comp.violatingCount}`);
 
     return parts.length > 0 ? `[${parts.join(' | ')}]` : '';
   }

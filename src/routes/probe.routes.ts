@@ -70,7 +70,13 @@ router.post(
           ruleName: r.matchedRule?.name,
           probe: r.triggerProbe?.probeId,
           temperature: r.triggerProbe?.temperature,
-          durationSeconds: r.durationSeconds
+          durationSeconds: r.durationSeconds,
+          triggeredProbeCount: r.triggeredProbes?.length || 1,
+          triggeredProbes: r.triggeredProbes?.map(tp => ({
+            probeId: tp.probeId,
+            temperature: tp.temperature,
+            durationSeconds: tp.durationSeconds
+          }))
         }))
       }, '探头数据接收成功');
     } catch (error: any) {
