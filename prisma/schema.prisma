@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id            Int        @id @default(autoincrement())
+  name          String
+  code          String     @unique
+  contactPerson String?
+  contactPhone  String?
+  wechatGroup   String?
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  shipments     Shipment[]
+  alertRules    AlertRule[]
+  alertRecords  AlertRecord[]
+  users         User[]
+}
+
+model Vehicle {
+  id          Int        @id @default(autoincrement())
+  plateNumber String     @unique
+  vehicleType String
+  gpsDeviceId String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  shipments   Shipment[]
+}
+
+model User {
+  id              Int                  @id @default(autoincrement())
+  username        String               @unique
+  password        String               @default("123456")
+  realName        String
+  role            String
+  phone           String?
+  email           String?
+  wechatId        String?
+  customerId      Int?
+  customer        Customer?            @relation(fields: [customerId], references: [id])
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  asDriver        Shipment[]           @relation("ShipmentDriver")
+  notifications   AlertNotification[]
+}
+
+model Shipment {
+  id               Int              @id @default(autoincrement())
+  shipmentNo       String           @unique
+  customerId       Int
+  customer         Customer         @relation(fields: [customerId], references: [id])
+  vehicleId        Int
+  vehicle          Vehicle          @relation(fields: [vehicleId], references: [id])
+  driverId         Int?
+  driver           User?            @relation("ShipmentDriver", fields: [driverId], references: [id])
+  temperatureZone  String
+  cargoDescription String?
+  targetTempMin    Float?
+  targetTempMax    Float?
+  startTime        DateTime?
+  endTime          DateTime?
+  status           String           @default("IN_TRANSIT")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  probeData        ProbeData[]
+  alertRecords     AlertRecord[]
+}
+
+model ProbeData {
+  id             Int           @id @default(autoincrement())
+  shipmentId     Int
+  shipment       Shipment      @relation(fields: [shipmentId], references: [id])
+  probeId        String
+  probeLocation  String
+  temperature    Float
+  humidity       Float?
+  latitude       Float?
+  longitude      Float?
+  collectedAt    DateTime
+  batteryLevel   Float?
+  signalStrength Int?
+  createdAt      DateTime      @default(now())
+
+  @@index([shipmentId, collectedAt])
+  @@index([probeId, collectedAt])
+}
+
+model AlertRule {
+  id                   Int        @id @default(autoincrement())
+  name                 String
+  description          String?
+  customerId           Int?
+  customer             Customer?  @relation(fields: [customerId], references: [id])
+  vehicleType          String?
+  temperatureZone      String?
+  probeLocation        String
+  conditionType        String
+  operator             String
+  thresholdTemp        Float
+  compareProbeLocation String?
+  compareThreshold     Float?
+  durationMinutes      Int        @default(0)
+  alertLevel           String
+  notifyRoles          String
+  isActive             Boolean    @default(true)
+  priority             Int        @default(0)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  alertRecords         AlertRecord[]
+}
+
+model AlertRecord {
+  id                Int                 @id @default(autoincrement())
+  alertRuleId       Int
+  alertRule         AlertRule           @relation(fields: [alertRuleId], references: [id])
+  shipmentId        Int
+  shipment          Shipment            @relation(fields: [shipmentId], references: [id])
+  customerId        Int
+  customer          Customer            @relation(fields: [customerId], references: [id])
+  alertLevel        String
+  probeId           String
+  probeLocation     String
+  triggerTemp       Float
+  probeComparison   String?
+  durationSeconds   Int
+  firstTriggeredAt  DateTime
+  confirmedAt       DateTime?
+  resolvedAt        DateTime?
+  status            String              @default("PENDING")
+  handledBy         String?
+  handlerRole       String?
+  handleResult      String?
+  handleRemark      String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  notifications     AlertNotification[]
+
+  @@index([shipmentId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
+}
+
+model AlertNotification {
+  id               Int                 @id @default(autoincrement())
+  alertRecordId    Int
+  alertRecord      AlertRecord         @relation(fields: [alertRecordId], references: [id])
+  userId           Int?
+  user             User?               @relation(fields: [userId], references: [id])
+  role             String
+  channel          String
+  recipient        String
+  content          String
+  status           String              @default("PENDING")
+  sentAt           DateTime?
+  acknowledgedAt   DateTime?
+  errorMessage     String?
+  retryCount       Int                 @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([alertRecordId])
+  @@index([status, createdAt])
+}
