@@ -33,6 +33,7 @@ export interface TriggeredProbeInfo {
 
 export interface AlertResult {
   triggered: boolean;
+  shipmentId?: number;
   alertLevel?: string;
   triggerProbe?: ProbeSnapshot;
   triggeredProbes?: TriggeredProbeInfo[];
@@ -190,6 +191,7 @@ export class AlertEngineService {
       const result = this.evaluateRule(rule, context);
       if (result.triggered && result.matchedRule) {
         triggeredRuleIds.add(result.matchedRule.id);
+        result.shipmentId = shipmentId;
         results.push(result);
 
         await this.handleAlertTrigger(rule, context, result);

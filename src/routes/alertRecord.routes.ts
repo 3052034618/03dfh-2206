@@ -15,6 +15,99 @@ const validStatuses = AlertStatusArray;
 const validLocations = ProbeLocationArray;
 
 router.get(
+  '/reconciliation',
+  [
+    query('shipmentNo').isString().withMessage('车次号必填'),
+    validateRequest
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const { shipmentNo } = req.query as { shipmentNo: string };
+
+      const shipment = await prisma.shipment.findUnique({
+        where: { shipmentNo },
+        select: { id: true, shipmentNo: true, status: true }
+      });
+      if (!shipment) return errorResponse(res, '车次不存在', 404);
+
+      const alertRecords = await prisma.alertRecord.findMany({
+        where: { shipmentId: shipment.id },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          alertRule: { select: { id: true, name: true, conditionType: true } },
+          notifications: {
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              content: true,
+              channel: true,
+              status: true,
+              createdAt: true,
+              user: { select: { realName: true, role: true } }
+            }
+          }
+        }
+      });
+
+      const reconciliation = alertRecords.map(r => {
+        const comp: any = r.probeComparison ? JSON.parse(r.probeComparison) : null;
+        const sortedNotifs = [...r.notifications].sort((a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        const notifLevelChain: string[] = [];
+        for (const n of sortedNotifs) {
+          const levelMatch = n.content.match(/【[^】]+-(.+?)】/);
+          const level = levelMatch ? levelMatch[1] : null;
+          if (level && !notifLevelChain.includes(level)) {
+            notifLevelChain.push(level);
+          }
+        }
+        const latestNotif = sortedNotifs.length > 0 ? sortedNotifs[sortedNotifs.length - 1] : null;
+        const latestNotifLevel = latestNotif ? (latestNotif.content.match(/【[^】]+-(.+?)】/)?.[1] || null) : null;
+        const levelMap: Record<string, string> = { '关注': 'ATTENTION', '警告': 'WARNING', '严重': 'CRITICAL' };
+        const latestNotifEnglish = latestNotifLevel ? (levelMap[latestNotifLevel] || latestNotifLevel) : null;
+        return {
+          alertId: r.id,
+          ruleId: r.alertRule?.id,
+          ruleName: r.alertRule?.name,
+          conditionType: r.alertRule?.conditionType,
+          finalLevel: r.alertLevel,
+          status: r.status,
+          probeId: r.probeId,
+          triggerTemp: r.triggerTemp,
+          durationMinutes: Math.round(r.durationSeconds / 60),
+          triggeredProbeCount: comp?.triggeredProbeCount || 1,
+          triggeredProbes: comp?.triggeredProbes || null,
+          probesByLocation: comp?.probesByLocation || null,
+          notificationCount: r.notifications.length,
+          notificationLevelChain: notifLevelChain.length > 0 ? notifLevelChain.join(' → ') : '',
+          latestNotificationLevel: latestNotifEnglish,
+          levelConsistent: !latestNotifEnglish || latestNotifEnglish === r.alertLevel,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt
+        };
+      });
+
+      const levelBreakdown: Record<string, number> = {};
+      for (const r of reconciliation) {
+        levelBreakdown[r.finalLevel] = (levelBreakdown[r.finalLevel] || 0) + 1;
+      }
+
+      successResponse(res, {
+        shipmentNo,
+        shipmentId: shipment.id,
+        shipmentStatus: shipment.status,
+        totalAlerts: reconciliation.length,
+        levelBreakdown,
+        alerts: reconciliation
+      });
+    } catch (error: any) {
+      errorResponse(res, error.message, 500);
+    }
+  }
+);
+
+router.get(
   '/',
   [
     query('shipmentId').optional().isInt().toInt(),
