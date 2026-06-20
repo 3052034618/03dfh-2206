@@ -797,21 +797,30 @@ export class AlertEngineService {
     }
 
     if (existingAlert) {
+      const levelChanged = result.alertLevel && existingAlert.alertLevel !== result.alertLevel;
+
+      const updateData: any = {
+        triggerTemp: result.triggerProbe!.temperature,
+        probeComparison: JSON.stringify(comp),
+        durationSeconds: result.durationSeconds!,
+        confirmedAt: existingAlert.confirmedAt || new Date()
+      };
+
+      if (levelChanged) {
+        updateData.alertLevel = result.alertLevel;
+      }
+
       const updated = await prisma.alertRecord.update({
         where: { id: existingAlert.id },
-        data: {
-          triggerTemp: result.triggerProbe!.temperature,
-          probeComparison: JSON.stringify(comp),
-          durationSeconds: result.durationSeconds!,
-          confirmedAt: existingAlert.confirmedAt || new Date()
-        }
+        data: updateData
       });
 
-      if (result.alertLevel && existingAlert.alertLevel !== result.alertLevel) {
+      if (levelChanged) {
+        logger.info(`告警 #${existingAlert.id} 级别变更: ${existingAlert.alertLevel} → ${result.alertLevel}，重新发送通知`);
         await this.notificationService.dispatchNotifications(updated, rule, ctx);
       }
 
-      logger.info(`更新告警记录 #${existingAlert.id}: 触发${result.triggeredProbes?.length || 1}个探头, 持续 ${Math.round((result.durationSeconds || 0) / 60)} 分钟, 当前 ${result.triggerProbe!.temperature}°C`);
+      logger.info(`更新告警记录 #${existingAlert.id}[${updated.alertLevel}]: 触发${result.triggeredProbes?.length || 1}个探头, 持续 ${Math.round((result.durationSeconds || 0) / 60)} 分钟, 当前 ${result.triggerProbe!.temperature}°C`);
       return;
     }
 

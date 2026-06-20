@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "setup": "npm install && npx prisma generate && npx prisma migrate dev --name init"
+    "setup": "npm install && npx prisma generate && npx prisma migrate dev --name init",
+    "verify": "ts-node scripts/verify-multi-point.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

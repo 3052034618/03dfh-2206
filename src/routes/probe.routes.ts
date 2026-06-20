@@ -137,10 +137,54 @@ router.post(
 
       logger.info(`批量接收探头数据: ${created.count}条, 触发${alerts.filter(a => a.triggered).length}个告警`);
 
+      const shipmentSummary: Record<string, any> = {};
+      for (const no of shipmentNos) {
+        const id = shipmentMap.get(no)!;
+        const shipAlerts = alerts.filter(a => 
+          a.triggered && a.matchedRule
+        );
+        shipmentSummary[no] = {
+          shipmentId: id,
+          probesReceived: records.filter((r: any) => r.shipmentNo === no).length,
+          alertsTriggered: shipAlerts.length,
+          alerts: shipAlerts.map(r => ({
+            level: r.alertLevel,
+            ruleId: r.matchedRule?.id,
+            ruleName: r.matchedRule?.name,
+            probe: r.triggerProbe?.probeId,
+            temperature: r.triggerProbe?.temperature,
+            durationSeconds: r.durationSeconds,
+            triggeredProbeCount: r.triggeredProbes?.length || 1,
+            triggeredProbes: r.triggeredProbes?.map(tp => ({
+              probeId: tp.probeId,
+              temperature: tp.temperature,
+              durationSeconds: tp.durationSeconds
+            })),
+            probesByLocation: r.probeComparison?.probesByLocation
+          }))
+        };
+      }
+
       successResponse(res, {
         received: created.count,
         shipmentCount: shipmentNos.length,
-        alertsTriggered: alerts.filter(a => a.triggered).length
+        alertsTriggered: alerts.filter(a => a.triggered).length,
+        shipmentSummary,
+        alerts: alerts.filter(a => a.triggered).map(r => ({
+          level: r.alertLevel,
+          ruleId: r.matchedRule?.id,
+          ruleName: r.matchedRule?.name,
+          probe: r.triggerProbe?.probeId,
+          temperature: r.triggerProbe?.temperature,
+          durationSeconds: r.durationSeconds,
+          triggeredProbeCount: r.triggeredProbes?.length || 1,
+          triggeredProbes: r.triggeredProbes?.map(tp => ({
+            probeId: tp.probeId,
+            temperature: tp.temperature,
+            durationSeconds: tp.durationSeconds
+          })),
+          probesByLocation: r.probeComparison?.probesByLocation
+        }))
       }, '批量接收成功');
     } catch (error: any) {
       logger.error('批量接收失败:', error);
